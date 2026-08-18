@@ -1,54 +1,54 @@
-This app allows you to visualise the outcomes of your actions using Claude AI. It creates a _decision_ tree around the thing that you want to look into.
+# Pathfinder AI
 
-See [the post](https://www.mkutay.dev/posts/ichack-pathfinder-ai) for more info.
+Pathfinder AI is a decision-support tool we built at IC Hack 2025, Imperial College London's student hackathon. You describe a decision or situation you're weighing up, and the app uses Claude to help you explore it as a branching tree: it asks a few clarifying questions, then generates a handful of likely future scenarios based on your answers, and you can keep drilling into any of those branches the same way.
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## How it works
 
-## Getting Started
+You start by typing a decision on the home page (e.g. "I'm planning to found a startup") or picking one of the example prompts. This creates a root node in the tree.
 
-First, run the development server:
+For the current node, the app asks Claude for two to four short clarifying questions about the situation, using the whole path of scenarios and previous answers as context so it doesn't repeat itself. You answer them in a set of cards next to the tree.
+
+Once you submit your answers, the app calls Claude again to generate two to four likely future scenarios that branch out from the current node. These appear as new nodes underneath the one you're on. You can click into any of them to explore that branch further (new questions, new sub-scenarios), or use the arrow and breadcrumb navigation to go back up the tree.
+
+Everything is persisted in Postgres: scenarios and questions are stored as rows referencing each other by UUID, and a recursive history function walks back up the parent chain to rebuild the whole scenario history sent to Claude on each call.
+
+## Tech stack
+
+- Next.js 15 (App Router, Turbopack for dev) with React 19 and TypeScript
+- Tailwind CSS with shadcn/ui components (built on Radix primitives)
+- react-hook-form and zod for form validation
+- Anthropic SDK, calling Claude 3.5 Sonnet for the questions and scenarios
+- postgres.js talking directly to a Postgres database, no ORM
+
+## Running locally
+
+Install dependencies and start the dev server:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+(npm, yarn, or pnpm work too, it's a standard Next.js project.)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You'll need two environment variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `CLAUDE_API_KEY`, an Anthropic API key
+- `POSTGRES_URL`, a connection string for a Postgres database
 
-## Learn More
+The database needs two tables, `scenarios` and `questions`; the schema we used is in a comment at the top of `src/lib/db.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+Then open http://localhost:3000.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Repository layout
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/app/page.tsx` - home page, where you start a new decision
+- `src/app/[id]/page.tsx` - the tree view for a given scenario node
+- `src/components/` - UI components (tree nodes, question forms, breadcrumbs), with `src/components/ui/` holding the shadcn/ui primitives
+- `src/lib/claude.ts` - prompts and calls to Claude for generating questions and scenarios
+- `src/lib/db.ts` - all the Postgres queries and the recursive history logic
+- `src/lib/postgres.ts` - database connection setup
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## API documentation
-
-```ts
-type Scenario = {"name": String, "questions": [String], "answers": [String]}
-
-function getQuestions(history) { // [Scenario]
-    return // [String]
-}
-
-function getScenarios(history) { // [Scenario]
-    return // [String]
-}
-```
+No license is included, so all rights are reserved by default.
